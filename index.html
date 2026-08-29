@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- viewport-fit=cover + user-scalable=no makes it behave like an app, not a webpage -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Hanzi</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hanzi">
+<meta name="theme-color" content="#0f1115">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ HOME SCREEN ============ -->
+<section id="home" class="screen active">
+  <header class="hero">
+    <h1>汉字</h1>
+    <p class="sub">read what you already speak</p>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <h2 class="label">Levels</h2>
+  <div id="levels" class="levels"></div>
+
+  <button id="startBtn" class="primary" disabled>Select a level</button>
+
+  <details class="settings">
+    <summary>Settings</summary>
+    <label>New words per day
+      <input type="number" id="newPerDay" min="0" max="200" step="5">
+    </label>
+    <button id="resetBtn" class="danger">Erase all progress</button>
+  </details>
+</section>
+
+<!-- ============ STUDY SCREEN ============ -->
+<section id="study" class="screen">
+  <header class="bar">
+    <button id="backBtn" class="ghost">Done</button>
+    <div id="queueCount" class="count"></div>
+  </header>
+
+  <div id="card" class="card">
+    <div id="hanzi" class="hanzi"></div>
+    <div id="answer" class="answer hidden">
+      <div id="pinyin" class="pinyin"></div>
+      <div id="meaning" class="meaning"></div>
+    </div>
+    <div id="tapHint" class="hint">tap to reveal</div>
+  </div>
+
+  <div id="grades" class="grades hidden">
+    <button class="grade miss"  data-grade="miss">Missed</button>
+    <button class="grade good"  data-grade="good">Got it</button>
+    <button class="grade known" data-grade="known">Already<br>know</button>
+  </div>
+</section>
+
+<!-- ============ SESSION DONE ============ -->
+<section id="done" class="screen">
+  <div class="donebox">
+    <div class="bigcheck">✓</div>
+    <h2>Session complete</h2>
+    <p id="doneStats"></p>
+    <button id="doneBtn" class="primary">Back</button>
+  </div>
+</section>
+
+<script src="app.js"></script>
+</body>
+</html>
