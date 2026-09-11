@@ -44,20 +44,24 @@ function today() {
 
 /* ---------- 3. The Leitner boxes ---------------------------------------- */
 
-// Box 0 is brand new. Answer correctly and the word climbs one box, and the
-// wait before you see it again grows. Miss it and it drops straight back to 0.
+// Box 0 is brand new. The three buttons move a word between boxes:
+//   Learned        -> climbs one box, so the wait before you see it grows
+//   Almost got it  -> stays in its box and comes back after that box's wait
+//   Still learning -> drops straight back to box 0 and repeats this session
 const INTERVALS = [0, 1, 3, 7, 16, 35, 75, 160, 365];  // days
-const RETIRED   = 99;                                  // "I already know this"
+const KNOWN_BOX = 5;     // box 5+ means recalled 5 times running over a month
+const RETIRED   = 99;    // words retired by the old "Already know" button
 
 function schedule(word, grade) {
   const rec = state.progress[word] || { b: 0, d: 0 };
 
-  if (grade === "known") {
-    rec.b = RETIRED;
-    rec.d = today() + 3650;              // effectively never
-  } else if (grade === "good") {
+  if (grade === "good") {
     rec.b = Math.min(rec.b + 1, INTERVALS.length - 1);
     rec.d = today() + INTERVALS[rec.b];
+  } else if (grade === "hard") {
+    // Same box, same wait - but at least a day, so a new word you nearly
+    // read is not shown to you again straight away.
+    rec.d = today() + Math.max(1, INTERVALS[rec.b]);
   } else {                               // "miss"
     rec.b = 0;
     rec.d = today();                     // due again right now
@@ -88,7 +92,7 @@ const LEVEL_NAMES = {
 /* ---------- 5. Building a session --------------------------------------- */
 
 let queue = [];                          // words waiting to be shown
-let session = { seen: 0, missed: 0, retired: 0 };
+let session = { seen: 0, miss: 0, hard: 0, good: 0 };
 
 async function buildQueue() {
   // Roll over the daily new-word allowance if it is a new day.
@@ -139,8 +143,8 @@ function show(id) {
 
 async function renderHome() {
   const recs    = Object.values(state.progress);
-  const learned = recs.filter(r => r.b > 0 && r.b !== RETIRED).length;
-  const known   = recs.filter(r => r.b === RETIRED).length;
+  const known   = recs.filter(r => r.b >= KNOWN_BOX).length;   // includes retired
+  const learned = recs.length - known;
 
   // Count what is actually due across the selected levels.
   let dueCount = 0;
@@ -229,16 +233,15 @@ function grade(g) {
   if (wasNew) { state.newToday++; save(); }
 
   session.seen++;
+  session[g]++;
   const card = current;
   queue.shift();
 
   if (g === "miss") {
-    session.missed++;
     // Put it back a few cards later so you meet it again this session,
     // but not immediately - that would only test short-term memory.
     queue.splice(Math.min(5, queue.length), 0, card);
   }
-  if (g === "known") session.retired++;
 
   nextCard();
 }
@@ -246,7 +249,8 @@ function grade(g) {
 function endSession() {
   $("#doneStats").innerHTML =
     session.seen + " cards reviewed<br>" +
-    session.missed + " missed &middot; " + session.retired + " retired";
+    session.miss + " still learning &middot; " + session.hard + " almost &middot; " +
+    session.good + " learned";
   show("done");
 }
 
@@ -258,7 +262,7 @@ $("#startBtn").onclick = async () => {
     alert("Nothing due right now. Add a level, or raise your new-words-per-day.");
     return;
   }
-  session = { seen: 0, missed: 0, retired: 0 };
+  session = { seen: 0, miss: 0, hard: 0, good: 0 };
   show("study");
   nextCard();
 };
@@ -287,8 +291,8 @@ document.addEventListener("keydown", (e) => {
   if (!$("#study").classList.contains("active")) return;
   if (e.code === "Space") { e.preventDefault(); revealed ? grade("good") : reveal(); }
   if (e.key === "1") grade("miss");
-  if (e.key === "2") grade("good");
-  if (e.key === "3") grade("known");
+  if (e.key === "2") grade("hard");
+  if (e.key === "3") grade("good");
 });
 
 /* ---------- 10. Go ------------------------------------------------------ */

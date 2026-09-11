@@ -17,8 +17,8 @@ Then open <http://localhost:5173>.
 You need a server rather than double-clicking `index.html`, because browsers
 block `fetch()` on `file://` pages and the word lists would fail to load.
 
-Keyboard shortcuts while studying: **space** reveals then marks correct,
-**1** missed, **2** got it, **3** already know.
+Keyboard shortcuts while studying: **space** reveals then marks learned,
+**1** still learning, **2** almost got it, **3** learned.
 
 ## Putting it on your iPhone
 
@@ -68,10 +68,13 @@ how long before you see it again:
 |---|---|---|---|---|---|---|---|---|---|
 | Wait | today | 1d | 3d | 7d | 16d | 35d | 75d | 160d | 365d |
 
-Get it right, the word climbs one box. Get it wrong, it falls to box 0 and comes
-back later in the same session. **Already know** retires it permanently, which is
-the button that saves you weeks — you already own thousands of these spoken words
-and should not be drilling 我.
+- **Learned** — the word climbs one box.
+- **Almost got it** — it stays in its box and comes back after that box's wait
+  (at least one day).
+- **Still learning** — it falls to box 0 and comes back later in the same session.
+
+A word in box 5 or higher counts as **Known** on the home screen: you have read
+it correctly five times running, across more than a month.
 
 Progress is stored in the browser under the key `hanzi.v1`.
 

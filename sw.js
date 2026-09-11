@@ -3,7 +3,7 @@
    copies instead of hitting the network. Bump CACHE when you change files,
    otherwise the phone will keep showing the old version. */
 
-const CACHE = "hanzi-v1";
+const CACHE = "hanzi-v2";
 
 const FILES = [
   "./", "./index.html", "./style.css", "./app.js", "./manifest.json",

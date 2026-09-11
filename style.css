@@ -9,7 +9,7 @@
   --accent:#4ea1ff;
   --good:#3ddc84;
   --miss:#ff6b6b;
-  --known:#ffb648;
+  --hard:#ffb648;
   --radius:16px;
 }
 
@@ -121,7 +121,7 @@ button{ font:inherit; color:inherit; border:none; background:none; cursor:pointe
 }
 .grade.miss { color:var(--miss);  border-color:#4a2530; }
 .grade.good { color:var(--good);  border-color:#1f4a33; }
-.grade.known{ color:var(--known); border-color:#4a3a1c; font-size:12px; }
+.grade.hard { color:var(--hard);  border-color:#4a3a1c; }
 .grade:active{ transform:scale(.97); }
 
 /* ---------- done ---------- */
