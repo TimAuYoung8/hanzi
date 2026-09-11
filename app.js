@@ -209,12 +209,40 @@ function nextCard() {
   revealed = false;
 
   $("#hanzi").textContent   = current.s;
+  // Long words (成语 are four characters) shrink so they stay on one line.
+  const chars = [...current.s].length;
+  $("#hanzi").style.fontSize = chars > 3 ? "min(132px, " + Math.floor(88 / chars) + "vw)" : "";
   $("#pinyin").textContent  = current.p;
   $("#meaning").textContent = current.m.join(" · ");
+  showOtherReadings(current.a || []);
   $("#answer").classList.add("hidden");
   $("#grades").classList.add("hidden");
   $("#tapHint").classList.remove("hidden");
   $("#queueCount").textContent = queue.length + " left";
+}
+
+// Some characters have more than one official reading (还 hái / huán).
+// The card is graded on the main one; the others are listed underneath so
+// you learn them together. Built with textContent, never innerHTML, so text
+// from the dictionary can never be treated as code.
+function showOtherReadings(others) {
+  const box = $("#also");
+  box.replaceChildren();
+  box.classList.toggle("hidden", others.length === 0);
+  if (others.length === 0) return;
+
+  const label = document.createElement("div");
+  label.className = "alsoLabel";
+  label.textContent = "Also read";
+  box.append(label);
+
+  for (const r of others) {
+    const line = document.createElement("div");
+    const p = document.createElement("b");
+    p.textContent = r.p;
+    line.append(p, " " + r.m.join(" · "));
+    box.append(line);
+  }
 }
 
 function reveal() {

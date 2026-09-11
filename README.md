@@ -4,7 +4,10 @@ A Mandarin **reading** trainer, built for someone who already speaks the languag
 and needs the characters. Cards run one direction only: character on screen, you
 say it aloud, flip to check. No English-to-Chinese recall, no tone drills.
 
-10,969 words from the HSK 3.0 syllabus, frequency-sorted inside each level.
+Every word in the official **2025 HSK syllabus** (新版HSK考试大纲), at its
+official level, with its official pinyin. Most common words first inside each
+level. Characters with more than one official reading (还 hái / huán) show the
+others under **Also read**.
 
 ## Running it on your computer
 
@@ -19,6 +22,9 @@ block `fetch()` on `file://` pages and the word lists would fail to load.
 
 Keyboard shortcuts while studying: **space** reveals then marks learned,
 **1** still learning, **2** almost got it, **3** learned.
+
+After changing any file, reload with **Ctrl+Shift+R**. A normal reload can
+show copies the browser saved earlier, so you would be testing old data.
 
 ## Putting it on your iPhone
 
@@ -55,8 +61,8 @@ chrome and works with no signal. Your progress lives on the phone.
 | `app.js` | All the logic — scheduling, decks, screen switching |
 | `sw.js` | Saves a copy of the app so it runs offline |
 | `manifest.json` | Tells iOS the name, icon, and colours |
-| `data/hsk1-7.json` | The words: characters, pinyin, up to 3 meanings |
-| `scripts/build_data.py` | Rebuilds those word lists from the source dictionary |
+| `data/hsk1-7.json` | The words: characters, pinyin, up to 3 meanings, other readings |
+| `scripts/build_data.py` | Rebuilds those word lists from the official syllabus |
 | `scripts/make_icons.py` | Redraws the app icons |
 
 ### Scheduling
@@ -84,18 +90,28 @@ Progress is stored in the browser under the key `hanzi.v1`.
 
 **Different intervals:** edit `INTERVALS` near the top of `app.js`.
 
-**Rebuild the word lists** (for example to switch to the older HSK 2.0 syllabus —
-change the `"n"` prefix to `"o"` in the script):
+**Rebuild the word lists**, for example after a new syllabus is published.
+The script downloads what it needs and stops with an error rather than write
+a short or broken list:
+
+```bash
+py -m pip install pypdf
+```
 
 ```bash
 py scripts/build_data.py
 ```
+
+It takes levels and pinyin from the official PDF and meanings from CC-CEDICT,
+always picking the dictionary entry that matches the official reading.
 
 **After changing any file, bump `CACHE` in `sw.js`** (`hanzi-v1` to `hanzi-v2`),
 or phones that already installed the app will keep serving the old copy.
 
 ## Credit
 
-Word list from
-[complete-hsk-vocabulary](https://github.com/drkameleon/complete-hsk-vocabulary),
-which draws on CC-CEDICT (CC BY-SA 4.0).
+- Levels and pinyin: the 2025 HSK syllabus, 新版HSK考试大纲（词汇、汉字、语法）,
+  published by Chinese Testing International (汉考国际).
+- Meanings: [CC-CEDICT](https://www.mdbg.net/chinese/dictionary?page=cc-cedict),
+  CC BY-SA 4.0.
+- Frequency order: [krmanik/HSK-3.0](https://github.com/krmanik/HSK-3.0).

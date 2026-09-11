@@ -3,7 +3,7 @@
    copies instead of hitting the network. Bump CACHE when you change files,
    otherwise the phone will keep showing the old version. */
 
-const CACHE = "hanzi-v2";
+const CACHE = "hanzi-v3";
 
 const FILES = [
   "./", "./index.html", "./style.css", "./app.js", "./manifest.json",
@@ -18,7 +18,10 @@ self.addEventListener("install", (e) => {
   // individually and tolerate misses.
   e.waitUntil(
     caches.open(CACHE)
-      .then(c => Promise.all(FILES.map(f => c.add(f).catch(() => {}))))
+      // cache: "reload" skips the browser's own download cache, so an update
+      // can never re-save a stale copy of the old files.
+      .then(c => Promise.all(FILES.map(f =>
+        c.add(new Request(f, { cache: "reload" })).catch(() => {}))))
       .then(() => self.skipWaiting())
   );
 });

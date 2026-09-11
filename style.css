@@ -111,6 +111,10 @@ button{ font:inherit; color:inherit; border:none; background:none; cursor:pointe
 .answer{ display:flex; flex-direction:column; gap:14px; }
 .pinyin{ font-size:30px; color:var(--accent); font-weight:600; }
 .meaning{ font-size:17px; color:var(--muted); line-height:1.55; max-width:32ch; }
+.also{ font-size:14px; color:var(--muted); line-height:1.6; max-width:32ch;
+  border-top:1px solid var(--line); padding-top:12px; }
+.also b{ color:var(--accent); font-weight:600; }
+.alsoLabel{ font-size:11px; text-transform:uppercase; letter-spacing:.8px; opacity:.7; margin-bottom:4px; }
 .hint{ font-size:13px; color:var(--muted); opacity:.65; }
 .hidden{ display:none !important; }
 
