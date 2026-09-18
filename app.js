@@ -23,8 +23,13 @@ const defaultState = {
 };
 
 function load() {
+  // structuredClone first, and not Object.assign({}, defaultState, ...):
+  // a plain copy would hand out the very objects inside defaultState, so
+  // studying would quietly fill the blank template in - which is what used
+  // to make "Erase all progress" appear to do nothing.
   try {
-    return Object.assign({}, defaultState, JSON.parse(localStorage.getItem(SAVE_KEY)));
+    return Object.assign(structuredClone(defaultState),
+                         JSON.parse(localStorage.getItem(SAVE_KEY)));
   } catch {
     return structuredClone(defaultState);   // first run, or a corrupted save
   }
@@ -80,8 +85,24 @@ async function getDeck(level) {
   if (!deckCache[level]) {
     const res = await fetch("data/hsk" + level + ".json");
     deckCache[level] = await res.json();
+    deckCache[level].forEach(w => w.lv = level);   // so a card can show "HSK 4"
   }
   return deckCache[level];
+}
+
+// Example sentences live in their own files, fetched only after the first card
+// is already on screen so they never hold it up.
+const exCache = {};
+
+async function getExamples(level) {
+  if (!exCache[level]) {
+    try {
+      exCache[level] = await (await fetch("data/ex" + level + ".json")).json();
+    } catch {
+      exCache[level] = {};        // missing file, or offline before it cached
+    }
+  }
+  return exCache[level];
 }
 
 const LEVEL_NAMES = {
@@ -200,24 +221,26 @@ async function renderHome() {
 
 /* ---------- 8. Study screen --------------------------------------------- */
 
-let current = null, revealed = false;
+// How much of the answer is showing: 0 character only, 1 plus pinyin,
+// 2 plus meaning. Tapping the card moves it along.
+let current = null, stage = 0;
 
 function nextCard() {
   if (queue.length === 0) return endSession();
 
-  current  = queue[0];
-  revealed = false;
+  current = queue[0];
+  stage   = 0;
 
   $("#hanzi").textContent   = current.s;
   // Long words (成语 are four characters) shrink so they stay on one line.
   const chars = [...current.s].length;
   $("#hanzi").style.fontSize = chars > 3 ? "min(132px, " + Math.floor(88 / chars) + "vw)" : "";
+  $("#levelChip").textContent = LEVEL_NAMES[current.lv] || "";
   $("#pinyin").textContent  = current.p;
   $("#meaning").textContent = current.m.join(" · ");
   showOtherReadings(current.a || []);
-  $("#answer").classList.add("hidden");
-  $("#grades").classList.add("hidden");
-  $("#tapHint").classList.remove("hidden");
+  fillExample();
+  applyStage();
   $("#queueCount").textContent = queue.length + " left";
 }
 
@@ -245,16 +268,61 @@ function showOtherReadings(others) {
   }
 }
 
-function reveal() {
-  if (revealed || !current) return;
-  revealed = true;
-  $("#answer").classList.remove("hidden");
-  $("#grades").classList.remove("hidden");
-  $("#tapHint").classList.add("hidden");
+// The box under the card: a real sentence using the word, or failing that
+// another HSK word built from one of its characters.
+function fillExample() {
+  const box = $("#example");
+  const sentence = (exCache[current.lv] || {})[current.s];
+  const seen = sentence ? null : compoundFor(current);
+
+  if (!sentence && !seen) { box.classList.add("hidden"); return; }
+
+  $("#exLabel").textContent   = sentence ? "Example" : "Seen in";
+  $("#exHanzi").textContent   = sentence ? sentence.s : seen.s;
+  $("#exPinyin").textContent  = sentence ? sentence.p : seen.p;
+  $("#exEnglish").textContent = sentence ? sentence.e : seen.m.join(" · ");
+  box.classList.remove("hidden");
+}
+
+// Another word containing one of this word's characters. Decks are ordered
+// commonest first, so the first match found is the most useful one.
+function compoundFor(word) {
+  for (const ch of word.s) {
+    for (const level of state.levels) {
+      for (const other of deckCache[level] || []) {
+        if (other.s !== word.s && other.s.includes(ch)) return other;
+      }
+    }
+  }
+  return null;
+}
+
+// The only place that decides what is on screen. nextCard() fills everything
+// in; this chooses how much of it you can see.
+function applyStage() {
+  $("#pinyin")   .classList.toggle("hidden", stage < 1);
+  $("#exPinyin") .classList.toggle("hidden", stage < 1);
+  $("#meaning")  .classList.toggle("hidden", stage < 2);
+  $("#exEnglish").classList.toggle("hidden", stage < 2);
+  $("#levelChip").classList.toggle("hidden", stage < 2);
+
+  // "Also read" exists only on words with more than one reading.
+  $("#also").classList.toggle("hidden", stage < 2 || $("#also").children.length === 0);
+
+  $("#tapHint").textContent = stage === 0 ? "Tap for pinyin"
+                            : stage === 1 ? "Tap again for meaning" : "";
+  $("#tapHint").classList.toggle("hidden", stage === 2);
+}
+
+function advance() {
+  if (!current || stage >= 2) return;   // a fourth tap does nothing
+  stage++;
+  applyStage();
 }
 
 function grade(g) {
-  if (!revealed || !current) return;
+  // Gradeable at any stage: a word you read instantly needs no reveal.
+  if (!current) return;
 
   const wasNew = !state.progress[current.s];
   schedule(current.s, g);
@@ -293,9 +361,14 @@ $("#startBtn").onclick = async () => {
   session = { seen: 0, miss: 0, hard: 0, good: 0 };
   show("study");
   nextCard();
+
+  // Sentences arrive in the background and fill into the card already shown.
+  for (const level of state.levels) {
+    getExamples(level).then(() => { if (current) { fillExample(); applyStage(); } });
+  }
 };
 
-$("#card").onclick = reveal;
+$("#card").onclick = advance;
 $$(".grade").forEach(b => b.onclick = () => grade(b.dataset.grade));
 
 $("#backBtn").onclick = () => { renderHome(); show("home"); };
@@ -306,18 +379,35 @@ $("#newPerDay").onchange = (e) => {
   save();
 };
 
-$("#resetBtn").onclick = () => {
-  if (confirm("Erase all progress? This cannot be undone.")) {
-    state = structuredClone(defaultState);
-    save();
-    renderHome();
+// Two taps instead of a confirm() dialog: on a phone the dialog is easy to
+// miss, and this way the button itself says what is about to happen and
+// shows that it worked.
+let resetArmed = false;
+
+$("#resetBtn").onclick = async () => {
+  const btn = $("#resetBtn");
+
+  if (!resetArmed) {
+    resetArmed = true;
+    btn.textContent = "Tap again to erase everything";
+    setTimeout(() => {
+      if (resetArmed) { resetArmed = false; btn.textContent = "Erase all progress"; }
+    }, 5000);                                  // changed your mind: it disarms
+    return;
   }
+
+  resetArmed = false;
+  state = structuredClone(defaultState);
+  save();
+  await renderHome();
+  btn.textContent = "Progress erased";
+  setTimeout(() => btn.textContent = "Erase all progress", 2000);
 };
 
 // Keyboard shortcuts, so testing on the laptop is not miserable.
 document.addEventListener("keydown", (e) => {
   if (!$("#study").classList.contains("active")) return;
-  if (e.code === "Space") { e.preventDefault(); revealed ? grade("good") : reveal(); }
+  if (e.code === "Space") { e.preventDefault(); stage < 2 ? advance() : grade("good"); }
   if (e.key === "1") grade("miss");
   if (e.key === "2") grade("hard");
   if (e.key === "3") grade("good");

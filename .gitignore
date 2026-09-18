@@ -1,2 +1,5 @@
 # Downloads cached by scripts/build_data.py
 data/_*
+
+# Python bytecode
+scripts/__pycache__/

@@ -3,13 +3,15 @@
    copies instead of hitting the network. Bump CACHE when you change files,
    otherwise the phone will keep showing the old version. */
 
-const CACHE = "hanzi-v3";
+const CACHE = "hanzi-v5";
 
 const FILES = [
   "./", "./index.html", "./style.css", "./app.js", "./manifest.json",
   "./data/index.json",
   "./data/hsk1.json", "./data/hsk2.json", "./data/hsk3.json", "./data/hsk4.json",
   "./data/hsk5.json", "./data/hsk6.json", "./data/hsk7.json",
+  "./data/ex1.json", "./data/ex2.json", "./data/ex3.json", "./data/ex4.json",
+  "./data/ex5.json", "./data/ex6.json", "./data/ex7.json",
   "./icons/icon-192.png", "./icons/icon-512.png"
 ];
 

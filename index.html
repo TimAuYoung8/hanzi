@@ -46,16 +46,31 @@
   </header>
 
   <div id="card" class="card">
+    <div id="levelChip" class="chip hidden"></div>
     <div id="hanzi" class="hanzi"></div>
-    <div id="answer" class="answer hidden">
-      <div id="pinyin" class="pinyin"></div>
-      <div id="meaning" class="meaning"></div>
+
+    <!-- Each part hides on its own, so the card can reveal in stages. -->
+    <div id="answer" class="answer">
+      <div id="pinyin" class="pinyin hidden"></div>
+      <div id="meaning" class="meaning hidden"></div>
       <div id="also" class="also hidden"></div>
     </div>
-    <div id="tapHint" class="hint">tap to reveal</div>
+
+    <div id="tapHint" class="hint">Tap for pinyin</div>
+
+    <!-- A real sentence using the word, or another word containing one of its
+         characters. Reveals in the same stages as the card above. -->
+    <div id="example" class="example hidden">
+      <div id="exLabel" class="exLabel"></div>
+      <div id="exHanzi" class="exHanzi"></div>
+      <div id="exPinyin" class="exPinyin hidden"></div>
+      <div id="exEnglish" class="exEnglish hidden"></div>
+    </div>
   </div>
 
-  <div id="grades" class="grades hidden">
+  <!-- Outside #card on purpose: tapping a grade must not also advance the
+       card to its next stage. -->
+  <div id="grades" class="grades">
     <button class="grade miss" data-grade="miss">Still<br>learning</button>
     <button class="grade hard" data-grade="hard">Almost<br>got it</button>
     <button class="grade good" data-grade="good">Learned</button>
