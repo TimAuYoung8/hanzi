@@ -113,6 +113,7 @@ const LEVEL_NAMES = {
 /* ---------- 5. Building a session --------------------------------------- */
 
 let queue = [];                          // words waiting to be shown
+let past  = [];                          // graded cards, newest last, so you can go back
 let session = { seen: 0, miss: 0, hard: 0, good: 0 };
 
 async function buildQueue() {
@@ -241,6 +242,7 @@ function nextCard() {
   showOtherReadings(current.a || []);
   fillExample();
   applyStage();
+  $("#backZone").classList.toggle("hidden", past.length === 0);
   $("#queueCount").textContent = queue.length + " left";
 }
 
@@ -320,11 +322,52 @@ function advance() {
   applyStage();
 }
 
+// Tapping the left edge: undo the last grade and show that word again, as
+// revealed as you left it. Undoing matters - the usual reason to go back is
+// that you meant to tap a different button.
+function goBack() {
+  const last = past.pop();
+  if (!last) return;
+
+  // "Still learning" had put a second copy further down the queue.
+  if (last.grade === "miss") {
+    const copy = queue.lastIndexOf(last.card);
+    if (copy > -1) queue.splice(copy, 1);
+  }
+
+  if (last.before) state.progress[last.card.s] = last.before;
+  else             delete state.progress[last.card.s];
+  if (last.wasNew) state.newToday = Math.max(0, state.newToday - 1);
+  save();
+
+  session.seen--;
+  session[last.grade]--;
+
+  queue.unshift(last.card);
+  nextCard();
+  stage = last.stage;                   // back to how much you had revealed
+  applyStage();
+}
+
 function grade(g) {
   // Gradeable at any stage: a word you read instantly needs no reveal.
   if (!current) return;
 
-  const wasNew = !state.progress[current.s];
+  const previous = state.progress[current.s];
+  const wasNew = !previous;
+
+  // Everything needed to put this card back exactly as it was, in case you
+  // tap the left edge. schedule() edits the saved record in place, so the
+  // copy has to be taken now.
+  past.push({
+    card:   current,
+    before: previous ? { ...previous } : null,
+    wasNew,
+    grade:  g,
+    stage,
+  });
+  if (past.length > 30) past.shift();     // no need to remember further back
+
   schedule(current.s, g);
   if (wasNew) { state.newToday++; save(); }
 
@@ -359,6 +402,7 @@ $("#startBtn").onclick = async () => {
     return;
   }
   session = { seen: 0, miss: 0, hard: 0, good: 0 };
+  past = [];
   show("study");
   nextCard();
 
@@ -369,6 +413,8 @@ $("#startBtn").onclick = async () => {
 };
 
 $("#card").onclick = advance;
+// stopPropagation, or the tap would also reach the card and advance it.
+$("#backZone").onclick = (e) => { e.stopPropagation(); goBack(); };
 $$(".grade").forEach(b => b.onclick = () => grade(b.dataset.grade));
 
 $("#backBtn").onclick = () => { renderHome(); show("home"); };
@@ -408,6 +454,7 @@ $("#resetBtn").onclick = async () => {
 document.addEventListener("keydown", (e) => {
   if (!$("#study").classList.contains("active")) return;
   if (e.code === "Space") { e.preventDefault(); stage < 2 ? advance() : grade("good"); }
+  if (e.key === "ArrowLeft" || e.key === "Backspace") { e.preventDefault(); goBack(); }
   if (e.key === "1") grade("miss");
   if (e.key === "2") grade("hard");
   if (e.key === "3") grade("good");
@@ -420,5 +467,27 @@ renderHome();
 // Register the offline cache. Wrapped in a check because file:// pages
 // (opening index.html by double-clicking) do not allow service workers.
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
-  navigator.serviceWorker.register("sw.js").catch(() => {});
+  navigator.serviceWorker.register("sw.js").then(reg => {
+
+    // iPhones usually resume this app rather than starting it fresh, and a
+    // resumed app never checks whether a new version was published. So check
+    // every time it comes back to the front.
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) reg.update().catch(() => {});
+    });
+
+    // A new version finished installing: switch to it straight away, unless
+    // you are part way through a card.
+    reg.addEventListener("updatefound", () => {
+      const fresh = reg.installing;
+      if (!fresh) return;
+      fresh.addEventListener("statechange", () => {
+        if (fresh.state === "activated" && navigator.serviceWorker.controller
+            && !$("#study").classList.contains("active")) {
+          location.reload();
+        }
+      });
+    });
+
+  }).catch(() => {});
 }

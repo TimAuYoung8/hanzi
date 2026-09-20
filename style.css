@@ -107,7 +107,17 @@ button{ font:inherit; color:inherit; border:none; background:none; cursor:pointe
   flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
   gap:20px; text-align:center; cursor:pointer; user-select:none; padding:20px 0;
   overflow-y:auto;   /* a long sentence scrolls instead of pushing the buttons off */
+  position:relative; /* so the back strip can sit over its left edge */
 }
+
+/* The left strip of the card. Tapping it goes back a word; the rest of the
+   card advances. It only appears once there is something to go back to. */
+.backZone{
+  position:absolute; left:0; top:0; bottom:0; width:22%; z-index:2;
+  display:flex; align-items:center; justify-content:flex-start; padding-left:4px;
+  font-size:34px; line-height:1; color:var(--muted); opacity:.3;
+}
+.backZone:active{ opacity:.85; }
 .hanzi{ font-size:clamp(72px, 24vw, 132px); line-height:1.15; font-weight:500; }
 .answer{ display:flex; flex-direction:column; gap:14px; }
 .pinyin{ font-size:30px; color:var(--accent); font-weight:600; }

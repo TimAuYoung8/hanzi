@@ -25,10 +25,14 @@ Then open <http://localhost:5173>.
 You need a server rather than double-clicking `index.html`, because browsers
 block `fetch()` on `file://` pages and the word lists would fail to load.
 
+Tapping the **left edge** of a card goes back to the previous word. It also
+undoes the grade you gave that word, putting its box and due date back, since
+the usual reason to go back is having tapped the wrong button.
+
 Keyboard shortcuts while studying: **space** steps through the three stages and
 then marks the word learned; **1** still learning, **2** almost got it,
-**3** learned. Those three work at any stage, so a word you read instantly needs
-only one key.
+**3** learned; **left arrow** goes back. The grades work at any stage, so a word
+you read instantly needs only one key.
 
 After changing any file, reload with **Ctrl+Shift+R**. A normal reload can
 show copies the browser saved earlier, so you would be testing old data.
